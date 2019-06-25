@@ -4,7 +4,8 @@
  (synopsis "GraphViz DSL for Scheme")
  (version "0.0.1")
  (dependencies
-  matchable)
+   matchable
+   srfi-1)
  (component-options (csc-options "-O0" "-d3"))
  (components
    (extension gvs-lib

@@ -1,67 +1,127 @@
 (module
   gvs
-  ()
+  (
+   gvs->string
+   gvs->tree
+   gvs-tree->string
+   gvs-tree-write
+   gvs-write
+   )
 
   (import scheme)
   (import chicken.base)
+  (import chicken.port)
   (import matchable)
+  (import srfi-1)
 
-  (define (graph-sets sets) (car   sets))
-  (define (edge-sets  sets) (cadr  sets))
-  (define (node-sets  sets) (caddr sets))
+  (define (sngl? l)
+    (and (pair? l)
+         (not (null? l))
+         (null? (cdr l))))
+
+  (define make-opt cons)
+
+  (define (opt-key opt) (car opt))
+  (define (opt-val opt) (cdr opt))
+
+  (define (opt->pair opt)
+    (define (safe-opt-key opt)
+      (and (pair? opt) (atom? (car opt)) (car opt)))
+    (define (safe-opt-val opt)
+      (and (pair? opt)
+           (not (sngl? opt))
+           (or (atom? (cdr opt))
+               (sngl? (cdr opt)))
+           (if (atom? (cdr opt))
+               (cdr opt)
+               (cadr opt))))
+    (make-opt (safe-opt-key opt) (safe-opt-val opt)))
+
+  (define (empty-sets) (make-sets '() '() '()))
+  (define (make-sets graph edge node) `(,graph ,edge ,node))
+  (define (graph-sets sets) (first  sets))
+  (define (edge-sets  sets) (second sets))
+  (define (node-sets  sets) (third  sets))
+  (define (set-graph-sets sets graph-sets) (make-sets graph-sets (edge-sets sets) (node-sets sets)))
+  (define (set-edge-sets  sets edge-sets)  (make-sets (graph-sets sets) edge-sets (node-sets sets)))
+  (define (set-node-sets  sets node-sets)  (make-sets (graph-sets sets) (edge-sets sets) node-sets))
+  (define (update-sets sets key val)
+    (define (sets-no-key sets key)
+      ; filter (not . (== key) . opt-key) sets
+      (filter (lambda (s) (not (eq? key (opt-key s)))) sets))
+
+    (let ((sets (sets-no-key sets key)))
+      (if val
+          (let loop ((sets sets))
+            (cond
+              ((null? sets)
+               `(,(make-opt key val)))
+              ((eq? key (opt-key (car sets)))
+               (cons (make-opt key val) (cdr sets)))
+              (else
+                (cons (car sets) (loop (cdr sets))))))
+          sets)))
+
   (define (merge-sets local global)
-    ; TODO:
-    local)
+    (foldl (lambda (ret opt) (update-sets ret (opt-key opt) (opt-val opt)))
+           global local))
 
   (define (new-ret ret res)
     (if (car res)
-        (cons res ret)
+        (cons (car res) ret)
         ret))
 
-  (define (di/graph t n . body)
-    (define (switch args sets)
-      (define (settings sets args)
-        ; TODO:
-        (define (graph opts sets) `(#f . ,sets))
-        (define (edge opts sets)  `(#f . ,sets))
-        (define (node opts sets)  `(#f . ,sets))
+  (define (gvs->tree gvs)
+    (define (gvs->tree-iter body sets ret)
+      (define (switch args sets)
+        (define (settings sets args)
+          (define (graph opts sets) (set-graph-sets sets (merge-sets opts (graph-sets sets))))
+          (define (edge  opts sets) (set-edge-sets  sets (merge-sets opts (edge-sets  sets))))
+          (define (node  opts sets) (set-node-sets  sets (merge-sets opts (node-sets  sets))))
+          (define (opts->pairs opts) (map opt->pair opts))
+          (foldl
+            (lambda (sets elem)
+              (match elem
+                     (('graph . opts) (graph (opts->pairs opts) sets))
+                     (('edge  . opts) (edge  (opts->pairs opts) sets))
+                     (('node  . opts) (node  (opts->pairs opts) sets))
+                     (_ (error 'settings "Must be one of `graph`, `edge` or `node`" elem))))
+            sets args))
 
-        (let loop ((args args)
-                   (sets sets)
-                   (ret '()))
-          (if (null? args)
-              `(,ret . ,sets)
-              (let ((res (match (car args)
-                                (('graph . opts) (graph opts sets))
-                                (('edge  . opts) (edge opts sets))
-                                (('node  . opts) (node opts sets))
-                                (_ (error args)))))
-                (loop (cdr args) (cdr res) (new-ret ret res))))))
+        (define (nodes sets nodes)
+          `(,(cons 'nodes (map (cut cons <> (node-sets sets)) nodes)) . ,sets))
 
-      (define (nodes sets nodes)
-        (let ((node-sets (node-sets sets)))
-          (map (lambda (node) `(,node sets) nodes))))
+        (define (-> global-sets from to . local-sets)
+          `((-> ,from ,to ,@(merge-sets local-sets (edge-sets global-sets))) . ,global-sets))
 
-      (define (-> global-sets from to . local-sets)
-        (let ((sets (merge-sets local-sets (edge-sets global-sets))))
-          `(,from ,to ,sets)))
+        (match args
+               (() `(#f . ,sets))
+               (('settings . args) `(#f . ,(settings sets args)))
+               (('nodes    . args) (nodes    sets args))
+               (('->       . args) (apply -> sets args))
+               (_ (error 'switch "Must be one of `settings`, `nodes` or `->`" args))))
 
-      (if (or (null? args)
-              (atom? args))
-          `(#f . sets)
-          (let ((tag (car args))
-                (args (cdr args)))
-            (match tag
-                   ('settings (settings sets args))
-                   ('nodes    (nodes    sets args))
-                   ('->       (apply -> sets args))
-                   (_         (error args))))))
-
-
-    (define (di/graph-iter body sets ret)
       (match body
-             (() (reverse ret))
+             (() `((graph . ,(graph-sets sets)) . ,(reverse ret)))
              ((head . tail)
               (let ((res (switch head sets)))
-                (di/graph-iter tail (cdr res) (new-ret ret (car res))))))))
-  )
+                (gvs->tree-iter tail (cdr res) (new-ret ret res))))))
+
+    (define (gvs->tree-int t n . body)
+      `(,t ,n ,@(gvs->tree-iter body (empty-sets) '())))
+
+    (apply gvs->tree-int gvs))
+
+  (define (gvs-tree-write gvs-tree)
+    ; TODO: Write in GraphViz format
+    (write gvs-tree)
+    (newline))
+
+  (define (gvs-tree->string gvs-tree)
+    (with-output-to-string (lambda () (gvs-tree-write gvs-tree))))
+
+  (define (gvs->string gvs)
+    (gvs-tree->string (gvs->tree gvs)))
+
+  (define (gvs-write gvs)
+    (gvs-tree-write (gvs->tree gvs))))
