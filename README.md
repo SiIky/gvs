@@ -22,7 +22,17 @@ Original [file](ctp.gvs):
   (-> Y A       (label "f . h"))
   (-> Y X       (label h))
   (-> Y B       (label "g . h"))
-  (-> Y "A × B" (label "<f . h, g . h>")))
+  (-> Y "A × B" (label "<f . h, g . h>"))
+
+  (settings (node (shape))) ; (shape) resets it to default
+
+  (node a (label "+"))
+  (node b (label "+"))
+
+  (-> a 1)
+  (-> a b)
+  (-> b 2)
+  (-> b 3))
 ```
 
 Resulting [file](ctp.gv) (obtained with `gvs2gv ctp.gvs`):
@@ -45,6 +55,12 @@ digraph C
 	Y -> X [ fontcolor="#66D9EF" color="#FD971F" label=h ];
 	Y -> B [ fontcolor="#66D9EF" color="#FD971F" label="g . h" ];
 	Y -> "A × B" [ fontcolor="#66D9EF" color="#FD971F" label="<f . h, g . h>" ];
+	a [ fontcolor="#F92672" label="+" ];
+	b [ fontcolor="#F92672" label="+" ];
+	a -> 1 [ fontcolor="#66D9EF" color="#FD971F" ];
+	a -> b [ fontcolor="#66D9EF" color="#FD971F" ];
+	b -> 2 [ fontcolor="#66D9EF" color="#FD971F" ];
+	b -> 3 [ fontcolor="#66D9EF" color="#FD971F" ];
 }
 ```
 

@@ -15,4 +15,10 @@ digraph C
 	Y -> X [ fontcolor="#66D9EF" color="#FD971F" label=h ];
 	Y -> B [ fontcolor="#66D9EF" color="#FD971F" label="g . h" ];
 	Y -> "A × B" [ fontcolor="#66D9EF" color="#FD971F" label="<f . h, g . h>" ];
+	a [ fontcolor="#F92672" label="+" ];
+	b [ fontcolor="#F92672" label="+" ];
+	a -> 1 [ fontcolor="#66D9EF" color="#FD971F" ];
+	a -> b [ fontcolor="#66D9EF" color="#FD971F" ];
+	b -> 2 [ fontcolor="#66D9EF" color="#FD971F" ];
+	b -> 3 [ fontcolor="#66D9EF" color="#FD971F" ];
 }

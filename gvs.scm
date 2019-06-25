@@ -93,16 +93,20 @@
         (define (nodes sets nodes)
           `(,(cons 'nodes (map (cut cons <> (node-sets sets)) nodes)) . ,sets))
 
+        (define (node sets node)
+          `((node ,(car node) ,(merge-sets (opts->pairs (cdr node)) (node-sets sets))) . ,sets))
+
         (define (edge t global-sets from to . local-sets)
           `((,t ,from ,to ,@(merge-sets (opts->pairs local-sets) (edge-sets global-sets))) . ,global-sets))
 
         (match args
                (() `(#f . ,sets))
                (('settings . args) `(#f . ,(settings sets args)))
-               (('nodes    . args) (nodes    sets args))
+               (('nodes    . args) (nodes sets args))
+               (('node     . args) (node sets args))
                (('->       . args) (apply edge '-> sets args))
                (('--       . args) (apply edge '-- sets args))
-               (_ (error 'switch "Must be one of `settings`, `nodes`, `->` or `--`" args))))
+               (_ (error 'switch "Must be one of `settings`, `nodes`, `node`, `->` or `--`" args))))
 
       (match body
              (() `((graph . ,(graph-sets sets)) . ,(reverse ret)))
@@ -128,9 +132,10 @@
           (for-each opt-printer opts))
 
         (define (print-opts-between-squares sets)
-          (display " [")
-          (opts-printer sets)
-          (display " ];\n"))
+          (when (not (null? sets))
+            (display " [")
+            (opts-printer sets)
+            (display " ];\n")))
 
         (define (graph-printer sets)
           (when (not (null? sets))
@@ -145,6 +150,11 @@
 
           (for-each (cut apply node-printer <>) nodes))
 
+        (define (node-printer node sets)
+          (display "\t")
+          (write node)
+          (print-opts-between-squares sets))
+
         (define (edge-printer t from to sets)
           (display "\t")
           (write from)
@@ -158,9 +168,10 @@
                (() #f)
                (('graph . sets) (graph-printer sets))
                (('nodes . nodes) (nodes-printer nodes))
+               (('node . node) (apply node-printer node))
                (('-> . (from . (to . sets))) (edge-printer '-> from to sets))
                (('-- . (from . (to . sets))) (edge-printer '-- from to sets))
-               (_ (error 'gvs-tree-write "Must be one of `graph`, `nodes`, `->` or `--`" elem))))
+               (_ (error 'gvs-tree-write "Must be one of `graph`, `nodes`, `node`, `->` or `--`" elem))))
 
       (print t " " n)
       (print "{")

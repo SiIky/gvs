@@ -16,4 +16,14 @@
   (-> Y A       (label "f . h"))
   (-> Y X       (label h))
   (-> Y B       (label "g . h"))
-  (-> Y "A × B" (label "<f . h, g . h>")))
+  (-> Y "A × B" (label "<f . h, g . h>"))
+
+  (settings (node (shape))) ; (shape) resets it to default
+
+  (node a (label "+"))
+  (node b (label "+"))
+
+  (-> a 1)
+  (-> a b)
+  (-> b 2)
+  (-> b 3))
