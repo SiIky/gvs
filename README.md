@@ -1,2 +1,3 @@
 # gvs
-GraphViz DSL for Scheme
+
+GraphViz Extension Language for Scheme

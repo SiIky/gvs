@@ -37,6 +37,7 @@
                (cadr opt))))
     (make-opt (safe-opt-key opt) (safe-opt-val opt)))
 
+  (define (opts->pairs opts) (map opt->pair opts))
   (define (empty-sets) (make-sets '() '() '()))
   (define (make-sets graph edge node) `(,graph ,edge ,node))
   (define (graph-sets sets) (first  sets))
@@ -74,11 +75,12 @@
   (define (gvs->tree gvs)
     (define (gvs->tree-iter body sets ret)
       (define (switch args sets)
+
         (define (settings sets args)
           (define (graph opts sets) (set-graph-sets sets (merge-sets opts (graph-sets sets))))
           (define (edge  opts sets) (set-edge-sets  sets (merge-sets opts (edge-sets  sets))))
           (define (node  opts sets) (set-node-sets  sets (merge-sets opts (node-sets  sets))))
-          (define (opts->pairs opts) (map opt->pair opts))
+
           (foldl
             (lambda (sets elem)
               (match elem
@@ -91,15 +93,18 @@
         (define (nodes sets nodes)
           `(,(cons 'nodes (map (cut cons <> (node-sets sets)) nodes)) . ,sets))
 
-        (define (-> global-sets from to . local-sets)
-          `((-> ,from ,to ,@(merge-sets local-sets (edge-sets global-sets))) . ,global-sets))
+        (define (edge t global-sets from to local-sets)
+          (let ((edge-sets (edge-sets global-sets))
+                (local-sets (opts->pairs local-sets)))
+            `((,t ,from ,to ,@(merge-sets local-sets edge-sets)) . ,global-sets)))
 
         (match args
                (() `(#f . ,sets))
                (('settings . args) `(#f . ,(settings sets args)))
                (('nodes    . args) (nodes    sets args))
-               (('->       . args) (apply -> sets args))
-               (_ (error 'switch "Must be one of `settings`, `nodes` or `->`" args))))
+               (('->       . args) (apply edge '-> sets args))
+               (('--       . args) (apply edge '-- sets args))
+               (_ (error 'switch "Must be one of `settings`, `nodes`, `->` or `--`" args))))
 
       (match body
              (() `((graph . ,(graph-sets sets)) . ,(reverse ret)))
@@ -113,9 +118,58 @@
     (apply gvs->tree-int gvs))
 
   (define (gvs-tree-write gvs-tree)
-    ; TODO: Write in GraphViz format
-    (write gvs-tree)
-    (newline))
+    (define (gvs-tree-write-int t n . body)
+      (define (outter-printer elem)
+        (define (opt-printer opt)
+          (display " ")
+          (write (opt-key opt))
+          (display "=")
+          (write (opt-val opt)))
+
+        (define (opts-printer opts)
+          (for-each opt-printer opts))
+
+        (define (print-opts-between-squares sets)
+          (display " [")
+          (opts-printer sets)
+          (display " ];\n"))
+
+        (define (graph-printer sets)
+          (when (not (null? sets))
+            (display "\tgraph")
+            (print-opts-between-squares sets)))
+
+        (define (nodes-printer nodes)
+          (define (node-printer nd-lbl . sets)
+            (display "\t")
+            (write nd-lbl)
+            (print-opts-between-squares sets))
+
+          (for-each (cut apply node-printer <>) nodes))
+
+        (define (edge-printer t from to sets)
+          (display "\t")
+          (write from)
+          (display " ")
+          (display t)
+          (display " ")
+          (write to)
+          (print-opts-between-squares sets))
+
+        (match elem
+               (() #f)
+               (('graph . sets) (graph-printer sets))
+               (('nodes . nodes) (nodes-printer nodes))
+               (('-> . (from . (to . sets))) (edge-printer '-> from to sets))
+               (('-- . (from . (to . sets))) (edge-printer '-- from to sets))
+               (_ (error 'gvs-tree-write "Must be one of `graph`, `nodes`, `->` or `--`" elem))))
+
+      (print t " " n)
+      (print "{")
+      (for-each outter-printer body)
+      (print "}"))
+
+    (apply gvs-tree-write-int gvs-tree))
 
   (define (gvs-tree->string gvs-tree)
     (with-output-to-string (lambda () (gvs-tree-write gvs-tree))))

@@ -1,17 +1,17 @@
 ; vim: ft=scheme
 ((author "siiky")
  (license "unlicense")
- (synopsis "GraphViz DSL for Scheme")
- (version "0.0.1")
+ (synopsis "GraphViz Extension Language for Scheme")
+ (version "0.1.0")
  (dependencies
    matchable
-   srfi-1)
+   srfi-1
+   srfi-13)
  (component-options (csc-options "-O0" "-d3"))
  (components
-   (extension gvs-lib
-              (types-file)
+   (extension gvs
               (modules gvs)
               (source gvs.scm))
-   (program gvs
-            (component-dependencies gvs-lib)
-            (source main.scm))))
+   (program gvs2gv
+            (component-dependencies gvs)
+            (source gvs2gv.scm))))
