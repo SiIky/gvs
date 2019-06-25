@@ -2,7 +2,7 @@
 ((author "siiky")
  (license "unlicense")
  (synopsis "GraphViz Extension Language for Scheme")
- (version "0.1.0")
+ (version "0.1.1")
  (dependencies
    matchable
    srfi-1

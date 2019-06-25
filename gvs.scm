@@ -93,10 +93,8 @@
         (define (nodes sets nodes)
           `(,(cons 'nodes (map (cut cons <> (node-sets sets)) nodes)) . ,sets))
 
-        (define (edge t global-sets from to local-sets)
-          (let ((edge-sets (edge-sets global-sets))
-                (local-sets (opts->pairs local-sets)))
-            `((,t ,from ,to ,@(merge-sets local-sets edge-sets)) . ,global-sets)))
+        (define (edge t global-sets from to . local-sets)
+          `((,t ,from ,to ,@(merge-sets (opts->pairs local-sets) (edge-sets global-sets))) . ,global-sets))
 
         (match args
                (() `(#f . ,sets))

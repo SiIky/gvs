@@ -16,16 +16,18 @@
                 (file-modification-time targ-fname))))))
 
 (define (main args)
-  (let ((files (filter (cut proc-file? <> "gvs" "gv") args)))
-    (for-each
-      (lambda (file)
-        (with-output-to-file
-          (pathname-replace-extension file "gv")
-          (lambda ()
-            (with-input-from-file
-              file
+  (if (null? args) ; read from stdin, write to stdout
+      (gvs-write (read))
+      (let ((files (filter (cut proc-file? <> "gvs" "gv") args)))
+        (for-each
+          (lambda (file)
+            (with-output-to-file
+              (pathname-replace-extension file "gv")
               (lambda ()
-                (gvs-write (read)))))))
-      files)))
+                (with-input-from-file
+                  file
+                  (lambda ()
+                    (gvs-write (read)))))))
+          files))))
 
 (main (command-line-arguments))
