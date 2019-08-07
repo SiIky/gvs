@@ -17,7 +17,9 @@
 
 (define (main args)
   (if (null? args) ; read from stdin, write to stdout
-      (gvs-write (read))
+      (let ((gvs-tree (read)))
+        (unless (eof-object? gvs-tree)
+          (gvs-write (read))))
       (let ((files (filter (cut proc-file? <> "gvs" "gv") args)))
         (for-each
           (lambda (file)
