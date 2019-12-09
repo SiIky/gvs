@@ -8,11 +8,14 @@
    gvs-write
    )
 
-  (import scheme)
-  (import chicken.base)
-  (import chicken.port)
-  (import matchable)
-  (import srfi-1)
+  (import
+    scheme
+    chicken.base
+    chicken.port)
+
+  (import
+    matchable
+    srfi-1)
 
   (define (sngl? l)
     (and (pair? l)
@@ -91,7 +94,7 @@
             sets args))
 
         (define (nodes sets nodes)
-          `(,(cons 'nodes (map (cut cons <> (node-sets sets)) nodes)) . ,sets))
+          `(,(cons 'nodes (map (cute cons <> (node-sets sets)) nodes)) . ,sets))
 
         (define (node sets node)
           `((node ,(car node) ,(merge-sets (opts->pairs (cdr node)) (node-sets sets))) . ,sets))
@@ -149,7 +152,7 @@
             (write nd-lbl)
             (print-opts-between-squares sets))
 
-          (for-each (cut apply node-printer <>) nodes))
+          (for-each (cute apply node-printer <>) nodes))
 
         (define (node-printer node sets)
           (display "\t")
