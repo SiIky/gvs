@@ -184,7 +184,10 @@
     (with-output-to-string (lambda () (gvs-tree-write gvs-tree))))
 
   (define (gvs->string gvs)
-    (gvs-tree->string (gvs->tree gvs)))
+    (if (eof-object? gvs)
+        ""
+        (gvs-tree->string (gvs->tree gvs))))
 
   (define (gvs-write gvs)
-    (gvs-tree-write (gvs->tree gvs))))
+    (unless (eof-object? gvs)
+      (gvs-tree-write (gvs->tree gvs)))))
