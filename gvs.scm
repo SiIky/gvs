@@ -135,7 +135,8 @@
           (when (not (null? sets))
             (display " [")
             (opts-printer sets)
-            (display " ];\n")))
+            (display " ]"))
+          (display ";\n"))
 
         (define (graph-printer sets)
           (when (not (null? sets))
