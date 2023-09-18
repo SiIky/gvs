@@ -177,10 +177,9 @@
                (('-- . (from . (to . sets))) (edge-printer '-- from to sets))
                (_ (error 'gvs-tree-write "Must be one of `graph`, `nodes`, `node`, `->` or `--`" elem))))
 
-      (print t " " n)
-      (print "{")
+      (display t) (display " ") (write n) (display " {") (newline)
       (for-each outter-printer body)
-      (print "}"))
+      (display "}") (newline))
 
     (apply gvs-tree-write-int gvs-tree))
 
